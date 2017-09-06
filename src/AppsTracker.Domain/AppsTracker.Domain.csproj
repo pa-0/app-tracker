@@ -69,6 +69,7 @@
     <Compile Include="Screenshots\IScreenshotService.cs" />
     <Compile Include="Screenshots\ScreenshotModel.cs" />
     <Compile Include="Screenshots\ScreenshotsService.cs" />
+    <Compile Include="Screenshots\ScreenshotStore.cs" />
     <Compile Include="Users\UserModel.cs" />
     <Compile Include="Logs\LogSummary.cs" />
     <Compile Include="Model\SelectableBase.cs" />
@@ -88,7 +89,7 @@
     <Compile Include="Settings\User\SettingsNodeAttribute.cs" />
     <Compile Include="Settings\User\XmlSettingsBase.cs" />
     <Compile Include="Settings\User\UserSettingsService.cs" />
-    <Compile Include="Tracking\ITrackingService.cs" />
+    <Compile Include="Screenshots\ITrackingService.cs" />
     <Compile Include="Tracking\TrackingService.cs" />
     <Compile Include="Apps\AppDurationOverviewUseCase.cs" />
     <Compile Include="Apps\AppStatsUseCaseAsync.cs" />

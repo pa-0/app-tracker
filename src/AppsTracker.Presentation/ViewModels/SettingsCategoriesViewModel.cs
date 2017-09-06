@@ -192,8 +192,7 @@ namespace AppsTracker.ViewModels
 
         private void ShowNewCategory(object parameter)
         {
-            bool open;
-            if (bool.TryParse(parameter as string, out open) == false)
+            if (bool.TryParse(parameter as string, out bool open) == false)
                 return;
 
             IsNewCategoryOpen = open;

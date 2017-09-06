@@ -12,7 +12,7 @@ namespace AppsTracker.Domain.Screenshots
 {
     [Export]
     [PartCreationPolicy(CreationPolicy.NonShared)]
-    class ScreenshotStore
+    public class ScreenshotStore
     {
         private const int MAX_FILE_NAME_LENGTH = 245;
 

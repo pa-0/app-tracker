@@ -34,7 +34,7 @@ namespace AppsTracker.ViewModels
         private readonly IAppSettingsService settingsService;
         private readonly IWindowService windowService;
         private readonly Mediator mediator;
-
+        private readonly ScreenshotStore screenshotStore;
 
         public override string Title
         {
@@ -108,12 +108,14 @@ namespace AppsTracker.ViewModels
         public ScreenshotsViewModel(IAppSettingsService settingsService,
                                     IScreenshotService screenshotService,
                                     IWindowService windowService,
-                                    Mediator mediator)
+                                    Mediator mediator,
+                                    ScreenshotStore screenshotStore)
         {
             this.settingsService = settingsService;
             this.screenshotService = screenshotService;
             this.windowService = windowService;
             this.mediator = mediator;
+            this.screenshotStore = screenshotStore;
 
             logList = new TaskObserver<IEnumerable<ScreenshotModel>>(screenshotService.GetAsync, this, OnScreenshotGet);
 
@@ -165,14 +167,13 @@ namespace AppsTracker.ViewModels
             if (selectedLog == null)
                 return;
 
-            var pathBuilder = new StringBuilder();
             Working = true;
             var selectedShots = selectedLog.Images.Where(s => s.IsSelected);
             try
             {
                 foreach (var shot in selectedShots)
                 {
-                    await SaveToFileAsync(pathBuilder, selectedLog, shot);
+                    await screenshotStore.SaveToFileAsync(selectedLog, shot);
                 }
                 var count = selectedShots.Count();
                 InfoContent = $"Saved {count} " + (count == 1 ? "image" : "images");
@@ -185,92 +186,6 @@ namespace AppsTracker.ViewModels
             {
                 Working = false;
             }
-        }
-
-
-        private async Task SaveToFileAsync(StringBuilder path, ScreenshotModel screenshot, Image image)
-        {
-            path.Append(screenshot.AppName);
-            path.Append("_");
-            path.Append(screenshot.WindowTitle);
-            path.Append("_");
-            path.Append(image.GetHashCode());
-            path.Append(".jpg");
-            string folderPath;
-
-            if (Directory.Exists(settingsService.Settings.DefaultScreenshotSavePath))
-                folderPath = Path.Combine(settingsService.Settings.DefaultScreenshotSavePath, CorrectPath(path.ToString()));
-            else
-                folderPath = CorrectPath(path.ToString());
-
-            folderPath = TrimPath(folderPath);
-            await SaveScreenshot(image.Screensht, folderPath);
-        }
-
-        private string CorrectPath(string path)
-        {
-            string newTitle = path;
-            char[] illegalChars = new char[] { '<', '>', ':', '"', '\\', '/', '|', '?', '*', '0' };
-            if (path.IndexOfAny(illegalChars) >= 0)
-            {
-                foreach (var chr in illegalChars)
-                {
-                    if (newTitle.Contains(chr))
-                    {
-                        while (newTitle.Contains(chr))
-                        {
-                            newTitle = newTitle.Remove(newTitle.IndexOf(chr), 1);
-                        }
-                    }
-                }
-            }
-            char[] charArray = newTitle.ToArray();
-            foreach (var chr in charArray)
-            {
-                int i = chr;
-                if (i >= 1 && i <= 31) newTitle = newTitle.Remove(newTitle.IndexOf(chr), 1);
-            }
-
-            return newTitle;
-        }
-
-        private string TrimPath(string path)
-        {
-            var extension = Path.GetExtension(path);
-            var pathNoExtension = path.Remove(path.Length - extension.Length - 1, extension.Length + 1);
-            if (pathNoExtension.Length >= MAX_FILE_NAME_LENGTH)
-            {
-                while (pathNoExtension.Length >= MAX_FILE_NAME_LENGTH)
-                {
-                    pathNoExtension = pathNoExtension.Remove(pathNoExtension.Length - 1, 1);
-                }
-            }
-            return pathNoExtension + extension;
-        }
-
-        private async Task SaveScreenshot(byte[] image, string path)
-        {
-            ImageCodecInfo jgpEncoder = GetEncoder(ImageFormat.Jpeg);
-
-            using (FileStream fileStream = File.Open(path, FileMode.OpenOrCreate))
-            {
-                await fileStream.WriteAsync(image, 0, image.Length);
-            }
-        }
-
-        private ImageCodecInfo GetEncoder(ImageFormat format)
-        {
-
-            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
-
-            foreach (ImageCodecInfo codec in codecs)
-            {
-                if (codec.FormatID == format.Guid)
-                {
-                    return codec;
-                }
-            }
-            return null;
         }
     }
 }
