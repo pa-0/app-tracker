@@ -57,6 +57,7 @@ namespace AppsTracker.Tests
         protected readonly Mock<IUseCase<ScreenshotOverview>> screenshotModelUseCase = new Mock<IUseCase<ScreenshotOverview>>();
         protected readonly Mock<IUseCase<String, DailyScreenshotModel>> dailyScreenshotModelUseCase = new Mock<IUseCase<string, DailyScreenshotModel>>();
 
+        protected readonly Mock<ScreenshotStore> screenshotStore = new Mock<ScreenshotStore>();
         protected readonly Mediator mediator = new Mediator();
         protected readonly ISyncContext syncContext = new SyncContextMock();
 
@@ -83,7 +84,8 @@ namespace AppsTracker.Tests
                             settingsService.Object,
                             screenshotService.Object,
                             windowService.Object,
-                            mediator),
+                            mediator,
+                            screenshotStore.Object),
                             ExportFactoryContextRelease));
 
             return new ExportFactory<ScreenshotsViewModel>(tupleFactory);
