@@ -9,9 +9,17 @@ namespace AppsTracker.Domain.Settings
         [SettingsNode(false)]
         public bool NotifyScreenshotTaken { get; set; }
 
+        [SettingsNode(false)]
+        public bool StoreScreenshotsOnCapture { get; set; }
+
         public AppSettings Clone()
         {
-            return new AppSettings() { DisableNotifyForNewVersion = this.DisableNotifyForNewVersion, NotifyScreenshotTaken = this.NotifyScreenshotTaken };
+            return new AppSettings()
+            {
+                DisableNotifyForNewVersion = this.DisableNotifyForNewVersion,
+                NotifyScreenshotTaken = this.NotifyScreenshotTaken,
+                StoreScreenshotsOnCapture = this.StoreScreenshotsOnCapture
+            };
         }
     }
 }
