@@ -1,4 +1,5 @@
-﻿using AppsTracker.Domain.Settings;
+﻿using AppsTracker.Common.Communication;
+using AppsTracker.Domain.Settings;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -11,25 +12,47 @@ using System.Threading.Tasks;
 namespace AppsTracker.Domain.Screenshots
 {
     [Export]
-    [PartCreationPolicy(CreationPolicy.NonShared)]
+    [PartCreationPolicy(CreationPolicy.Shared)]
     public class ScreenshotStore
     {
         private const int MAX_FILE_NAME_LENGTH = 245;
 
         private readonly IAppSettingsService settingsService;
+        private readonly IUserSettingsService userSettingsService;
+        private readonly IScreenshotService screenshotService;
 
         [ImportingConstructor]
-        public ScreenshotStore(IAppSettingsService settingsService)
+        public ScreenshotStore(IAppSettingsService settingsService,
+                               IScreenshotService screenshotService,
+                               IUserSettingsService userSettingsService,
+                               Mediator mediator)
         {
             this.settingsService = settingsService;
+            this.userSettingsService = userSettingsService;
+            this.screenshotService = screenshotService;
+
+            mediator.Register<int>(MediatorMessages.SCREENSHOT_TAKEN, OnScreenshotTaken);
         }
 
-        public async Task SaveToFileAsync(ScreenshotModel screenshot, Image image)
+        private async void OnScreenshotTaken(int id)
+        {
+            if (userSettingsService.AppSettings.StoreScreenshotsOnCapture)
+            {
+                var screenshot = await screenshotService.GetImageById(id);
+                await SaveToFileAsync(screenshot);
+                //foreach (var image in screenshot.Images)
+                //{
+                //    await SaveToFileAsync(image);
+                //}
+            }
+        }
+
+        public async Task SaveToFileAsync(Image image)
         {
             var path = new StringBuilder();
-            path.Append(screenshot.AppName);
+            path.Append(image.AppName);
             path.Append("_");
-            path.Append(screenshot.WindowTitle);
+            path.Append(image.WindowTitle);
             path.Append("_");
             path.Append(image.GetHashCode());
             path.Append(".jpg");

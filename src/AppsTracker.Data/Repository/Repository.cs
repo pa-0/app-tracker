@@ -54,6 +54,19 @@ namespace AppsTracker.Data.Repository
             }
         }
 
+        public async Task<T> GetSingleAsync<T>(int id, params Expression<Func<T, object>>[] navigations) where T : class, IEntity
+        {
+            using (var context = new AppsEntities())
+            {
+                var query = context.Set<T>().AsQueryable();
+                foreach (var nav in navigations)
+                {
+                    query = query.Include(nav);
+                }
+                return await query.AsNoTracking().FirstOrDefaultAsync(s => s.ID == id);
+            }
+        }
+
         public async Task<T> GetSingleAsync<T>(Expression<Func<T, bool>> filter) where T : class, IEntity
         {
             using (var context = new AppsEntities())
@@ -197,12 +210,14 @@ namespace AppsTracker.Data.Repository
             }
         }
 
-        public async Task SaveNewEntityAsync<T>(T item) where T : class
+        public async Task<int> SaveNewEntityAsync<T>(T item) where T : class, IEntity
         {
             using (var context = new AppsEntities())
             {
                 context.Set<T>().Add(item);
                 await context.SaveChangesAsync();
+                await context.Entry(item).GetDatabaseValuesAsync();
+                return item.ID;
             }
         }
 

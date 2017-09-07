@@ -63,7 +63,7 @@ namespace AppsTracker.Tracking
                 {
                     s.LogID = activeLog.ID;
                     await repository.SaveNewEntityAsync(s);
-                    mediator.NotifyColleagues(MediatorMessages.SCREENSHOT_TAKEN);
+                    mediator.NotifyColleagues(MediatorMessages.SCREENSHOT_TAKEN, s.ID);
                 });
         }
 
@@ -84,8 +84,7 @@ namespace AppsTracker.Tracking
                 return;
             }
 
-            bool isNewApp;
-            var app = GetApp(logInfo, out isNewApp);
+            var app = GetApp(logInfo, out bool isNewApp);
             var window = GetWindow(logInfo, app);
 
             var log = new Log(window.ID, trackingService.UsageID)
@@ -93,7 +92,7 @@ namespace AppsTracker.Tracking
                 DateCreated = logInfo.Start,
                 UtcDateCreated = logInfo.UtcStart,
                 DateEnded = logInfo.End,
-                UtcDateEnded = logInfo.UtcEnd,
+                UtcDateEnded = logInfo.UtcEnd
             };
 
             repository.SaveNewEntity(log);

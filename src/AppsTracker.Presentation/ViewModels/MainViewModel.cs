@@ -313,14 +313,7 @@ namespace AppsTracker.ViewModels
             this.windowService = windowService;
             this.mediator = mediator;
 
-            mediator.Register(MediatorMessages.SCREENSHOT_TAKEN, () =>
-            {
-                if (userSettingsService.AppSettings.NotifyScreenshotTaken)
-                {
-                    InfoContent = "Screenshot taken";
-                    windowService.FlashWindow();
-                }
-            });
+            mediator.Register<int>(MediatorMessages.SCREENSHOT_TAKEN, OnScreenshotTaken);
 
             RegisterChild(() => ProduceViewModel(dataVMFactory));
             RegisterChild(() => ProduceViewModel(statisticsVMFactory));
@@ -334,152 +327,160 @@ namespace AppsTracker.ViewModels
             {
                 releaseNotesService.GetReleaseNotesAsync()
                     .ContinueWith(OnGetReleaseNotes, TaskContinuationOptions.NotOnFaulted);
-    }
-}
+            }
+        }
+
+        private void OnScreenshotTaken(int screenshotId)
+        {
+            if (userSettingsService.AppSettings.NotifyScreenshotTaken)
+            {
+                InfoContent = "Screenshot taken";
+                windowService.FlashWindow();
+            }
+        }
+
+        private void OnGetReleaseNotes(Task<IEnumerable<ReleaseNote>> preceedingTask)
+        {
+            var notes = preceedingTask.Result;
+            var versions = new List<Version>(notes.Count());
+            foreach (var note in notes)
+            {
+                Version version;
+                if (Version.TryParse(note.Version, out version))
+                    versions.Add(version);
+            }
+            var latestVersion = versions.OrderByDescending(v => v).FirstOrDefault();
+            if (latestVersion == null)
+            {
+                return;
+            }
+            var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            if (latestVersion > currentVersion)
+            {
+                NewVersionAvailable = true;
+            }
+
+        }
+
+        private void GetUsers()
+        {
+            userCollection = repository.GetFiltered<Uzer>(u => u.ID > 0).Select(u => u.ToModel());
+        }
 
 
-private void OnGetReleaseNotes(Task<IEnumerable<ReleaseNote>> preceedingTask)
-{
-    var notes = preceedingTask.Result;
-    var versions = new List<Version>(notes.Count());
-    foreach (var note in notes)
-    {
-        Version version;
-        if (Version.TryParse(note.Version, out version))
-            versions.Add(version);
-    }
-    var latestVersion = versions.OrderByDescending(v => v).FirstOrDefault();
-    if (latestVersion == null)
-    {
-        return;
-    }
-    var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-    if (latestVersion > currentVersion)
-    {
-        NewVersionAvailable = true;
-    }
-
-}
-
-private void GetUsers()
-{
-    userCollection = repository.GetFiltered<Uzer>(u => u.ID > 0).Select(u => u.ToModel());
-}
+        private void ChangeLoggingStatus()
+        {
+            var settings = UserSettings;
+            settings.TrackingEnabled = !settings.TrackingEnabled;
+            settingsService.SaveChanges(settings);
+            mediator.NotifyColleagues(MediatorMessages.TRACKING_ENABLED_CHANGING, settings.TrackingEnabled);
+            mediator.NotifyColleagues(settings.TrackingEnabled ? MediatorMessages.RESUME_TRACKING : MediatorMessages.STOP_TRACKING);
+            PropertyChanging("UserSettings");
+        }
 
 
-private void ChangeLoggingStatus()
-{
-    var settings = UserSettings;
-    settings.TrackingEnabled = !settings.TrackingEnabled;
-    settingsService.SaveChanges(settings);
-    mediator.NotifyColleagues(MediatorMessages.TRACKING_ENABLED_CHANGING, settings.TrackingEnabled);
-    mediator.NotifyColleagues(settings.TrackingEnabled ? MediatorMessages.RESUME_TRACKING : MediatorMessages.STOP_TRACKING);
-    PropertyChanging("UserSettings");
-}
+        private void OpenPopup(object parameter)
+        {
+            string popup = parameter as string;
+            if (popup == "Users")
+            {
+                if (IsPopupUsersOpen) IsPopupUsersOpen = false;
+                else IsPopupUsersOpen = true;
+            }
+            else if (popup == "Calendar")
+            {
+                if (IsPopupCalendarOpen) IsPopupCalendarOpen = false;
+                else IsPopupCalendarOpen = true;
+            }
+        }
 
 
-private void OpenPopup(object parameter)
-{
-    string popup = parameter as string;
-    if (popup == "Users")
-    {
-        if (IsPopupUsersOpen) IsPopupUsersOpen = false;
-        else IsPopupUsersOpen = true;
-    }
-    else if (popup == "Calendar")
-    {
-        if (IsPopupCalendarOpen) IsPopupCalendarOpen = false;
-        else IsPopupCalendarOpen = true;
-    }
-}
+        private void ClearFilter()
+        {
+            IsFilterApplied = false;
+            trackingService.ClearDateFilter();
+            PropertyChanging("DateFrom");
+            PropertyChanging("DateTo");
+            mediator.NotifyColleagues(MediatorMessages.REFRESH_LOGS);
+        }
+
+        private void CloseDatesPopup()
+        {
+            if (IsPopupCalendarOpen)
+                IsPopupCalendarOpen = false;
+        }
 
 
-private void ClearFilter()
-{
-    IsFilterApplied = false;
-    trackingService.ClearDateFilter();
-    PropertyChanging("DateFrom");
-    PropertyChanging("DateTo");
-    mediator.NotifyColleagues(MediatorMessages.REFRESH_LOGS);
-}
-
-private void CloseDatesPopup()
-{
-    if (IsPopupCalendarOpen)
-        IsPopupCalendarOpen = false;
-}
+        private void ThisMonth()
+        {
+            DateTime now = DateTime.Now;
+            DateFrom = new DateTime(now.Year, now.Month, 1);
+            int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
+            DateTo = new DateTime(now.Year, now.Month, lastDay);
+        }
 
 
-private void ThisMonth()
-{
-    DateTime now = DateTime.Now;
-    DateFrom = new DateTime(now.Year, now.Month, 1);
-    int lastDay = DateTime.DaysInMonth(now.Year, now.Month);
-    DateTo = new DateTime(now.Year, now.Month, lastDay);
-}
+        private void ThisWeek()
+        {
+            DateTime now = DateTime.Today;
+            int delta = DayOfWeek.Monday - now.DayOfWeek;
+            if (delta > 0)
+                delta -= 7;
+            DateFrom = now.AddDays(delta);
+            DateTo = DateFrom.AddDays(6);
+        }
 
 
-private void ThisWeek()
-{
-    DateTime now = DateTime.Today;
-    int delta = DayOfWeek.Monday - now.DayOfWeek;
-    if (delta > 0)
-        delta -= 7;
-    DateFrom = now.AddDays(delta);
-    DateTo = DateFrom.AddDays(6);
-}
+        private void GoToData()
+        {
+            SelectedChild = GetChild<DataHostViewModel>();
+        }
 
 
-private void GoToData()
-{
-    SelectedChild = GetChild<DataHostViewModel>();
-}
+        private void GoToStats()
+        {
+            SelectedChild = GetChild<StatisticsHostViewModel>();
+        }
 
 
-private void GoToStats()
-{
-    SelectedChild = GetChild<StatisticsHostViewModel>();
-}
+        private void GoToSettings()
+        {
+            if (SelectedChild.GetType() == typeof(SettingsHostViewModel))
+            {
+                return;
+            }
+
+            if (toSettings != SelectedChild.GetType())
+            {
+                toSettings = SelectedChild.GetType();
+            }
+            SelectedChild = GetChild<SettingsHostViewModel>();
+        }
 
 
-private void GoToSettings()
-{
-    if (SelectedChild.GetType() == typeof(SettingsHostViewModel))
-    {
-        return;
-    }
+        private void ReturnFromSettings()
+        {
+            if (toSettings == null)
+            {
+                SelectedChild = GetChild<DataHostViewModel>();
+            }
+            SelectedChild = GetChild(toSettings);
+        }
 
-    if (toSettings != SelectedChild.GetType())
-    {
-        toSettings = SelectedChild.GetType();
-    }
-    SelectedChild = GetChild<SettingsHostViewModel>();
-}
+        private void CloseNewVersionNotifier()
+        {
+            NewVersionAvailable = false;
+        }
 
-
-private void ReturnFromSettings()
-{
-    if (toSettings == null)
-    {
-        SelectedChild = GetChild<DataHostViewModel>();
-    }
-    SelectedChild = GetChild(toSettings);
-}
-
-private void CloseNewVersionNotifier()
-{
-    NewVersionAvailable = false;
-}
-
-private void ShowWeb()
-{
-    try
-    {
-        System.Diagnostics.Process.Start("http://www.theappstracker.com");
-    }
-    catch
-    {
-    }
-}
+        private void ShowWeb()
+        {
+            try
+            {
+                System.Diagnostics.Process.Start("http://www.theappstracker.com");
+            }
+            catch
+            {
+            }
+        }
     }
 }

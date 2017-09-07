@@ -6,5 +6,7 @@ namespace AppsTracker.Domain.Screenshots
     public interface IScreenshotService : IUseCaseAsync<ScreenshotModel>
     {
         Task DeleteScreenshotsAsync(IEnumerable<Image> screenshots);
+
+        Task<Image> GetImageById(int id);
     }
 }

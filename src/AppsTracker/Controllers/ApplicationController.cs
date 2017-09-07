@@ -12,6 +12,7 @@ using System.ComponentModel.Composition;
 using AppsTracker.Data.Repository;
 using AppsTracker.Domain.Settings;
 using AppsTracker.Service;
+using AppsTracker.Domain.Screenshots;
 
 namespace AppsTracker.Controllers
 {
@@ -24,6 +25,7 @@ namespace AppsTracker.Controllers
         private readonly IAppSettingsService appSettingsService;
         private readonly IRepository repository;
         private readonly IWindowService windowService;
+        private readonly ScreenshotStore screenshotStore;
 
         [ImportingConstructor]
         public ApplicationController(IAppearanceController appearanceController,
@@ -31,7 +33,8 @@ namespace AppsTracker.Controllers
                                      IAppSettingsService appSettingsService,
                                      IUserSettingsService userSettingsService,
                                      IRepository repository,
-                                     IWindowService windowService)
+                                     IWindowService windowService,
+                                     ScreenshotStore screenshotStore)
         {
             this.appearanceController = appearanceController;
             this.trackingController = trackingController;
@@ -39,6 +42,7 @@ namespace AppsTracker.Controllers
             this.appSettingsService = appSettingsService;
             this.repository = repository;
             this.windowService = windowService;
+            this.screenshotStore = screenshotStore;
         }
 
         public void Initialize(bool autoStart)

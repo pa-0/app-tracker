@@ -31,7 +31,6 @@ namespace AppsTracker.ViewModels
         private const int MAX_FILE_NAME_LENGTH = 245;
 
         private readonly IScreenshotService screenshotService;
-        private readonly IAppSettingsService settingsService;
         private readonly IWindowService windowService;
         private readonly Mediator mediator;
         private readonly ScreenshotStore screenshotStore;
@@ -105,13 +104,11 @@ namespace AppsTracker.ViewModels
 
 
         [ImportingConstructor]
-        public ScreenshotsViewModel(IAppSettingsService settingsService,
-                                    IScreenshotService screenshotService,
+        public ScreenshotsViewModel(IScreenshotService screenshotService,
                                     IWindowService windowService,
                                     Mediator mediator,
                                     ScreenshotStore screenshotStore)
         {
-            this.settingsService = settingsService;
             this.screenshotService = screenshotService;
             this.windowService = windowService;
             this.mediator = mediator;
@@ -168,14 +165,14 @@ namespace AppsTracker.ViewModels
                 return;
 
             Working = true;
-            var selectedShots = selectedLog.Images.Where(s => s.IsSelected);
+            var selectedImages = selectedLog.Images.Where(s => s.IsSelected);
             try
             {
-                foreach (var shot in selectedShots)
+                foreach (var image in selectedImages)
                 {
-                    await screenshotStore.SaveToFileAsync(selectedLog, shot);
+                    await screenshotStore.SaveToFileAsync(image);
                 }
-                var count = selectedShots.Count();
+                var count = selectedImages.Count();
                 InfoContent = $"Saved {count} " + (count == 1 ? "image" : "images");
             }
             catch (IOException fail)

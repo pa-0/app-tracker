@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
@@ -38,6 +39,15 @@ namespace AppsTracker.Domain.Screenshots
         public async Task DeleteScreenshotsAsync(IEnumerable<Image> screenshots)
         {
             await repository.DeleteByIdsAsync<Screenshot>(screenshots.Select(i => i.ScreenshotId));
+        }
+
+        public async Task<Image> GetImageById(int id)
+        {
+            var log = await repository.GetSingleAsync<Screenshot>(id,
+                                                           s => s.Log,
+                                                           s => s.Log.Window,
+                                                           s => s.Log.Window.Application);
+            return new Image(log.Log.Window.Application.Name, log);
         }
     }
 }

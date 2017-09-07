@@ -30,6 +30,8 @@ namespace AppsTracker.Data.Repository
 
         Task<T> GetSingleAsync<T>(int id) where T : class, IEntity;
 
+        Task<T> GetSingleAsync<T>(int id, params Expression<Func<T, object>>[] navigations) where T : class, IEntity;
+
         Task<T> GetSingleAsync<T>(Expression<Func<T, bool>> filter) where T : class, IEntity;
 
         IEnumerable<T> Get<T>() where T : class;
@@ -60,7 +62,7 @@ namespace AppsTracker.Data.Repository
 
         void SaveNewEntity<T>(T item) where T : class;
 
-        Task SaveNewEntityAsync<T>(T item) where T : class;
+        Task<int> SaveNewEntityAsync<T>(T item) where T : class, IEntity;
 
         void SaveModifiedEntityRange<T>(IEnumerable<T> items) where T : class;
 
